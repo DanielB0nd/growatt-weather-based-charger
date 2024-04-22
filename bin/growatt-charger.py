@@ -127,7 +127,6 @@ def growatt_get_device_info(growatt_api, login_response):
   plant_id = plant_list['data'][0]['plantId']
   plant_info = growatt_api.plant_info(plant_id)
   device_sn = plant_info['deviceList'][0]['deviceSn']
-
   return {'plant_id': plant_id, 'device_sn': device_sn}
 
 def get_current_charge(growatt_api, plant_id, device_sn, logger):
@@ -137,12 +136,19 @@ def get_current_charge(growatt_api, plant_id, device_sn, logger):
   return soc_pct
 
 def get_offpeak_duration(off_peak_start_time, off_peak_end_time):
-  datetime_start = datetime.strptime(off_peak_start_time, '%H:%M')
-  datetime_end = datetime.strptime(off_peak_end_time, '%H:%M')
-  if datetime_start > datetime_end:
-    raise ValueError("Off-peak start time is after Off-peak end time")
-  time_delta=datetime_end-datetime_start
-  return time_delta.seconds/3600 #Convert diff into minutes
+    # Convert strings to datetime objects
+    datetime_start = datetime.strptime(off_peak_start_time, '%H:%M')
+    datetime_end = datetime.strptime(off_peak_end_time, '%H:%M')
+    
+    # If end time is before start time, add 24 hours to end time
+    if datetime_end < datetime_start:
+        datetime_end += timedelta(days=1)
+    
+    # Calculate time difference
+    time_delta = datetime_end - datetime_start
+    
+    # Convert difference into hours
+    return time_delta.total_seconds() / 3600
 
 def set_growatt_datetime(growatt_api, gw_device_sn, logger, output_string):
   now = datetime.now()
